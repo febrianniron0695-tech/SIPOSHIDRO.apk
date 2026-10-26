@@ -1,0 +1,9 @@
+{
+  "name": "SI POS HIDRO",
+  "short_name": "SIPOSHIDRO",
+  "description": "Sistem Informasi Pelaporan Stasiun Hidrologi Dinas PUPR NTT",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a"
+}

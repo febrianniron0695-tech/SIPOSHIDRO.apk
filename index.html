@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SI POS HIDRO - Sistem Informasi Pelaporan Stasiun Hidrologi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1e3a8a">
+</head>
+<body class="bg-slate-100 min-h-screen font-sans antialiased text-slate-800">
+
+    <!-- Konfigurasi Backend Apps Script URL -->
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzDollfbRFB3cs0sM_6eBGgrFTLbNTNZoNNzYr1BbN09gOrkSp0B8dm-peyjpBDtTZF/exec";
+    </script>
+
+    <!-- CONTAINER UTAMA -->
+    <div id="appContainer" class="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- HEADER APLIKASI -->
+        <header class="bg-blue-900 text-white p-5 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-2xl font-bold border border-white/20">
+                    💧
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wide">SI POS HIDRO</h1>
+                    <p class="text-xs text-blue-200">Sistem Informasi Pelaporan Stasiun Hidrologi — Dinas PUPR NTT</p>
+                </div>
+            </div>
+            <div id="userInfoHeader" class="hidden text-right text-xs bg-blue-800/80 px-3 py-2 rounded-xl border border-blue-700">
+                <p id="userStationName" class="font-bold text-yellow-300"></p>
+                <p id="userRoleIsland" class="text-blue-200"></p>
+                <button onclick="handleLogout()" class="mt-1 text-[10px] text-red-300 hover:text-red-100 underline font-semibold">Keluar / Logout</button>
+            </div>
+        </header>
+
+        <!-- 1. HALAMAN LOGIN -->
+        <section id="loginSection" class="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-5 max-w-md mx-auto">
+            <div class="text-center space-y-1">
+                <h2 class="text-lg font-bold text-slate-800">Masuk ke Sistem</h2>
+                <p class="text-xs text-slate-500">Silakan pilih wilayah, hak akses, dan nama stasiun Anda</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Pilih Wilayah / Pulau</label>
+                    <select id="loginIsland" onchange="initLoginDropdown()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="Pulau Timor">Pulau Timor</option>
+                        <option value="Pulau Sumba">Pulau Sumba</option>
+                        <option value="Pulau Flores">Pulau Flores</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Pilih Hak Akses Masuk</label>
+                    <select id="loginRole" onchange="initLoginDropdown()" class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="observer">Petugas / Observer Lapangan</option>
+                        <option value="verifikator">Verifikator</option>
+                        <option value="admin">Administrator Dinas PUPR</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label id="labelUsername" class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Pilih Tipe / Nama Stasiun</label>
+                    <select id="loginUsername" class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">-- Memuat daftar... --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Password / Kata Sandi</label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" placeholder="Masukkan Password" class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl pl-3 pr-16 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <button type="button" onclick="togglePasswordVisibility()" id="togglePasswordBtn" class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-500 hover:text-blue-600 px-2 py-1 bg-slate-200/60 rounded-lg">Lihat</button>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="handleLogin()" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-blue-900/20 transition-all text-sm tracking-wide">
+                MASUK APLIKASI 🚀
+            </button>
+        </section>
+
+        <!-- 2. DASHBOARD PETUGAS / OBSERVER (INPUT LAPORAN) -->
+        <section id="observerSection" class="hidden bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-6">
+            <div class="border-b pb-3 flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800">Formulir Pelaporan Harian Stasiun</h2>
+                <span class="text-xs px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">Mode Observer</span>
+            </div>
+
+            <form id="reportForm" onsubmit="handleReportSubmit(event)" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Tanggal & Waktu Pelaporan</label>
+                        <input type="datetime-local" id="reportTimestamp" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Curah Hujan (mm)</label>
+                        <input type="number" step="0.1" min="0" id="rainfallAmount" placeholder="Contoh: 12.5" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Kondisi Alat / Stasiun</label>
+                        <select id="equipmentCondition" required class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2 text-sm">
+                            <option value="Baik (B)">Baik (B)</option>
+                            <option value="Rusak Ringan (RR)">Rusak Ringan (RR)</option>
+                            <option value="Rusak Berat (RB)">Rusak Berat (RB)</option>
+                            <option value="Hilang / Rata Tanah (H/RT)">Hilang / Rata Tanah (H/RT)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Keterangan / Catatan Lapangan</label>
+                        <input type="text" id="reportNotes" placeholder="Catatan kondisi cuaca / alat..." class="w-full bg-slate-50 border border-slate-300 text-slate-800 rounded-xl px-3 py-2 text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">Unggah Foto Dokumentasi Lapangan</label>
+                    <input type="file" id="reportPhoto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                </div>
+
+                <button type="submit" id="btnSubmitReport" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-all text-sm">
+                    KIRIM LAPORAN HARIAN 📤
+                </button>
+            </form>
+        </section>
+
+        <!-- 3. DASHBOARD VERIFIKATOR & ADMIN (TABEL & REKAP DATA) -->
+        <section id="verifikatorSection" class="hidden bg-white border border-slate-200 shadow-xl rounded-2xl p-6 space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800">Rekapitulasi & Verifikasi Laporan</h2>
+                    <p class="text-xs text-slate-500">Daftar laporan stasiun yang memerlukan verifikasi data</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportToCSV()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition-all">
+                        📊 Unduh CSV / Excel
+                    </button>
+                    <button onclick="loadVerifikatorData()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition-all">
+                        🔄 Refresh Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABEL LAPORAN -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100 border-b border-slate-200 text-slate-700 uppercase font-semibold">
+                            <th class="p-3">No</th>
+                            <th class="p-3">Waktu Pelaporan</th>
+                            <th class="p-3">Nama Stasiun</th>
+                            <th class="p-3">Curah Hujan (mm)</th>
+                            <th class="p-3">Kondisi Alat</th>
+                            <th class="p-3">Status</th>
+                            <th class="p-3">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="verifikator-table-body" class="divide-y divide-slate-200">
+                        <tr>
+                            <td colspan="7" class="p-4 text-center text-slate-400">Tidak ada data antrean verifikasi saat ini.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="text-center text-xs text-slate-400 py-4 border-t border-slate-200">
+            &copy; 2026 Bidang Sumber Daya Air — Dinas PUPR Provinsi NTT. All rights reserved.
+        </footer>
+    </div>
+
+    <!-- SCRIPT LOGIKA LENGKAP & BERSIH (TANPA SYNTAX ERROR) -->
+    <script>
+        let currentUserSession = {
+            island: 'Pulau Timor',
+            role: 'observer',
+            stationName: ''
+        };
+
+        let reportsToExport = [];
+
+        // 1. Fungsi API
+        async function callApi(action, payload = {}) {
+            try {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, ...payload })
+                });
+                return await response.json();
+            } catch (err) {
+                console.error("API Error:", err);
+                return { success: false, message: err.toString() };
+            }
+        }
+
+        function togglePasswordVisibility() {
+            let passInput = document.getElementById('loginPassword');
+            let btn = document.getElementById('togglePasswordBtn');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                btn.textContent = 'Sembunyi';
+            } else {
+                passInput.type = 'password';
+                btn.textContent = 'Lihat';
+            }
+        }
+
+        // 2. Dropdown Login
+        function initLoginDropdown() {
+            let role = document.getElementById('loginRole').value;
+            let labelUser = document.getElementById('labelUsername');
+
+            if (role === 'admin') {
+                labelUser.textContent = 'Pilih Nama / Jabatan Admin';
+            } else if (role === 'verifikator') {
+                labelUser.textContent = 'Pilih Nama Verifikator';
+            } else {
+                labelUser.textContent = 'Pilih Tipe / Nama Stasiun';
+            }
+
+            loadStationDropdown();
+        }
+
+        async function loadStationDropdown() {
+            let island = document.getElementById('loginIsland').value;
+            let role = document.getElementById('loginRole').value;
+            let selectUser = document.getElementById('loginUsername');
+            
+            selectUser.innerHTML = '<option value="">-- Memuat daftar... --</option>';
+
+            let res = await callApi('getStationList', { island, role });
+            if (res.success && res.data) {
+                selectUser.innerHTML = '';
+                res.data.forEach(item => {
+                    let opt = document.createElement('option');
+                    opt.value = item;
+                    opt.textContent = item;
+                    selectUser.appendChild(opt);
+                });
+            } else {
+                selectUser.innerHTML = '<option value="">Gagal memuat daftar stasiun</option>';
+            }
+        }
+
+        // 3. Process Login
+        async function handleLogin() {
+            let island = document.getElementById('loginIsland').value;
+            let role = document.getElementById('loginRole').value;
+            let username = document.getElementById('loginUsername').value;
+            let password = document.getElementById('loginPassword').value;
+
+            if (!username) {
+                alert("Pilih nama stasiun / verifikator terlebih dahulu!");
+                return;
+            }
+
+            currentUserSession = { island, role, stationName: username };
+
+            // Tampilkan Header Info
+            document.getElementById('userInfoHeader').classList.remove('hidden');
+            document.getElementById('userStationName').textContent = username;
+            document.getElementById('userRoleIsland').textContent = `${role.toUpperCase()} — ${island}`;
+
+            // Sembunyikan Login
+            document.getElementById('loginSection').classList.add('hidden');
+
+            if (role === 'observer') {
+                document.getElementById('observerSection').classList.remove('hidden');
+            } else {
+                document.getElementById('verifikatorSection').classList.remove('hidden');
+                loadVerifikatorData();
+            }
+        }
+
+        function handleLogout() {
+            document.getElementById('userInfoHeader').classList.add('hidden');
+            document.getElementById('observerSection').classList.add('hidden');
+            document.getElementById('verifikatorSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('loginPassword').value = '';
+        }
+
+        // 4. Observer Submit Report
+        async function handleReportSubmit(e) {
+            e.preventDefault();
+            let btn = document.getElementById('btnSubmitReport');
+            btn.disabled = true;
+            btn.textContent = 'Mengirim Laporan...';
+
+            let timestamp = document.getElementById('reportTimestamp').value;
+            let rainfall = document.getElementById('rainfallAmount').value;
+            let condition = document.getElementById('equipmentCondition').value;
+            let notes = document.getElementById('reportNotes').value;
+
+            let payload = {
+                island: currentUserSession.island,
+                stationName: currentUserSession.stationName,
+                timestamp: timestamp,
+                rainfall: rainfall,
+                condition: condition,
+                notes: notes
+            };
+
+            let res = await callApi('submitReport', payload);
+            btn.disabled = false;
+            btn.textContent = 'KIRIM LAPORAN HARIAN 📤';
+
+            if (res.success) {
+                alert("Laporan harian berhasil dikirim!");
+                document.getElementById('reportForm').reset();
+            } else {
+                alert("Gagal mengirim laporan: " + res.message);
+            }
+        }
+
+        // 5. Load Verifikator Data
+        async function loadVerifikatorData() {
+            let tbody = document.getElementById('verifikator-table-body');
+            tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">Memuat data verifikasi...</td></tr>';
+
+            let res = await callApi('getVerifikatorReportList', { islandName: currentUserSession.island });
+            if (res.success && res.data) {
+                reportsToExport = res.data;
+                renderVerifikatorTable(res.data);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada antrean laporan.</td></tr>';
+            }
+        }
+
+        function renderVerifikatorTable(rows) {
+            let tbody = document.getElementById('verifikator-table-body');
+            if (!tbody) return;
+
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada antrean verifikasi untuk wilayah ini.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            rows.forEach((r, idx) => {
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-200";
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-slate-600">${idx + 1}</td>
+                    <td class="p-3 text-slate-700">${r.timestamp || '-'}</td>
+                    <td class="p-3 font-bold text-slate-800">${r.stationName || '-'}</td>
+                    <td class="p-3 font-semibold text-blue-700">${r.totalRainfall || '0'} mm</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 border text-slate-700">${r.kondisiAlat || 'Baik'}</span></td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${r.statusVerifikasi || 'Menunggu'}</span></td>
+                    <td class="p-3">
+                        <button onclick="verifyReport('${r.rowId}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] px-2.5 py-1 rounded-lg font-bold">Verifikasi</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 6. Export CSV (FUNGSI BLOB DENGAN \n BERSIH DAN RAPI — 100% BEBAS SYNTAX ERROR)
+        function exportToCSV() {
+            if (!reportsToExport || reportsToExport.length === 0) {
+                alert("Tidak ada data untuk diunduh!");
+                return;
+            }
+
+            let csvRows = [];
+            csvRows.push(['No', 'Waktu', 'Nama Stasiun', 'Kabupaten', 'Total Hujan (mm)', 'Kondisi Alat', 'Status']);
+
+            reportsToExport.forEach((r, idx) => {
+                csvRows.push([
+                    idx + 1,
+                    `"${r.timestamp || ''}"`,
+                    `"${r.stationName || ''}"`,
+                    `"${r.kabupaten || ''}"`,
+                    `"${r.totalRainfall || 0}"`,
+                    `"${r.kondisiAlat || ''}"`,
+                    `"${r.statusVerifikasi || ''}"`
+                ].join(','));
+            });
+
+            let blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `Rekap_SI_POS_HIDRO_${currentUserSession.island}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Inisialisasi saat pertama kali dibuka
+        window.onload = function() {
+            initLoginDropdown();
+        };
+    </script>
+</body>
+</html>
